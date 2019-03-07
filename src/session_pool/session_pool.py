@@ -4,13 +4,19 @@ from functools import partial
 from random import randint
 from threading import Thread
 from time import sleep
+from types import SimpleNamespace
 
 from requests_futures.sessions import FuturesSession
 
 import requests
 proxies = {'https': 'http://PRG-DC\srv_prgdc-OATQualys:b&Gw@2w5H7Q!xLQf@globalproxy.goc.dhl.com:8080'}
-TaskRequest = namedtuple('TaskRequest', 'method result_queue args_kwargs')
-FuncArgs = namedtuple('FuncArgs', '')
+TaskRequest = namedtuple('TaskRequest', 'method result_queue url kwargs',defaults)
+
+class T(namedtuple('T', 'method result_queue args_kwargs')):
+    def __init__(self):
+        super().__init__()
+        self.args_kwargs = SimpleNamespace(args=(), kwargs={})
+
 class SessionPool(Thread):
     '''
 
