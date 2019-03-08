@@ -9,13 +9,11 @@ from types import SimpleNamespace
 from requests_futures.sessions import FuturesSession
 
 import requests
-proxies = {'https': 'http://PRG-DC\srv_prgdc-OATQualys:b&Gw@2w5H7Q!xLQf@globalproxy.goc.dhl.com:8080'}
-TaskRequest = namedtuple('TaskRequest', 'method result_queue url kwargs',defaults)
+# proxies = {'https': 'http://PRG-DC\srv_prgdc-OATQualys:b&Gw@2w5H7Q!xLQf@globalproxy.goc.dhl.com:8080'}
+proxies = {}
+TaskRequest = namedtuple('TaskRequest', 'method result_queue url kwargs', defaults={})
 
-class T(namedtuple('T', 'method result_queue args_kwargs')):
-    def __init__(self):
-        super().__init__()
-        self.args_kwargs = SimpleNamespace(args=(), kwargs={})
+
 
 class SessionPool(Thread):
     '''
@@ -28,8 +26,8 @@ class SessionPool(Thread):
         self.comm_queue = comm_queue
         self.futures = {}
 
-        self.method = {'post': partial(self.future_session.post, proxies=proxies),
-                       'get': partial(self.future_session.get, proxies=proxies)
+        self.method = {'post': self.future_session.post,
+                       'get': self.future_session.get
                        }
 
     def run(self):
@@ -44,16 +42,17 @@ class SessionPool(Thread):
                 if not isinstance(task_request, TaskRequest):
                     # log error
                     continue
-                future = self.method[task_request.method](task_request.args_kwargs[0], **task_request.args_kwargs[1])
+                future = self.method[task_request.method](task_request.url, **task_request.kwargs)
                 self.futures[future] = task_request.result_queue
 
             finished = [future for future in self.futures.keys() if future.done()]
 
             for future in finished:
                 try:
-                    result = (0, future.result())  # add exception hadling
+                    result = future.result()  # add exception hadling
                 except BaseException as e:
-                    result = (900,) #errorcode sessionpool 900 general_error
+                    result = e
+                    print(e)
                     # log error
 
                 self.futures[future].put(result)
@@ -68,10 +67,11 @@ class W(Thread):
         self.result_q = queue.Queue()
 
     def run(self, *args, **kwargs):
-        t = TaskRequest('get',self.result_q, ('http://slowwly.robertomurray.co.uk/delay/{}/url/http://google.co.uk'.format(randint(1,5)*1000),))
+        url = 'http://slowwly.robertomurray.co.uk/delay/{}/url/http://google.co.uk'.format(randint(1,5)*1000)
+        t = TaskRequest('get', self.result_q, url, proxies)
         self.comm_q.put(t)
         response = self.result_q.get()
-        print('{}\n{}'.format(*response))
+        print('response\n{}'.format( response.text))
 
 
 if __name__ == 'request_pool':

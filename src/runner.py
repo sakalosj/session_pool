@@ -11,7 +11,7 @@ sp.start()
 url = 'http://testing-ground.scraping.pro'
 url_l = 'http://testing-ground.scraping.pro/login?mode=login'
 kwargs = dict(data={'username': 'test', 'password': '123!@#qweqweasdasd'})
-tr1 = TaskRequest('get', r1_queue, (url, kwargs))
+tr1 = TaskRequest('get', r1_queue, url, kwargs)
 
 comm_queue.put(tr1)
 response = r1_queue.get()
